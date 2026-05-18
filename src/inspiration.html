@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <title>VoltWise • Asset Defense SCADA | IoT Kapasitor Bank</title>
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'PP Mori', system-ui, -apple-system, sans-serif;
+      background-color: #000000;
+      overflow-x: hidden;
+      color: #ededee;
+    }
+
+    /* ----- AMOLED + ABSTRACT ANIMATED LINE BACKGROUND ----- */
+    .bg-abstract {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      background: radial-gradient(circle at 20% 30%, #0a0a0f, #000000);
+    }
+
+    .animated-lines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .animated-lines svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .line-path {
+      stroke: url(#gradLines);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: drawLine 14s linear infinite alternate;
+    }
+
+    @keyframes drawLine {
+      0% { stroke-dashoffset: 2000; opacity: 0.2; }
+      50% { stroke-dashoffset: 0; opacity: 0.8; }
+      100% { stroke-dashoffset: -2000; opacity: 0.2; }
+    }
+
+    /* scroll snap container */
+    .snap-container {
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+    }
+
+    .screen {
+      scroll-snap-align: start;
+      min-height: 100vh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 20px;
+      position: relative;
+    }
+
+    .container {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* glassmorphic cards - dark neon theme */
+    .glass-card {
+      background: rgba(12, 14, 22, 0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 255, 255, 0.1);
+      transition: all 0.25s ease;
+      padding: 24px;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(0, 255, 255, 0.5);
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 210, 255, 0.3);
+      transform: translateY(-3px);
+    }
+
+    .badge-neon {
+      background: rgba(0, 255, 255, 0.15);
+      border: 1px solid #0ff;
+      color: #0ff;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e0f2fe, #0ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* phase grid */
+    .phase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin: 24px 0;
+    }
+
+    .phase-card {
+      background: rgba(8, 10, 18, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 1.8rem;
+      border-left: 3px solid #0ff;
+    }
+
+    .step-dot {
+      width: 28px;
+      height: 8px;
+      background: #2a2e45;
+      border-radius: 12px;
+      transition: 0.2s;
+    }
+    .step-dot.active {
+      background: #0ff;
+      box-shadow: 0 0 6px #0ff;
+    }
+
+    .value-large {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff, #aaffff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* Bottom navigator */
+    .bottom-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(16px);
+      border-radius: 60px;
+      padding: 10px 24px;
+      display: flex;
+      gap: 28px;
+      z-index: 1000;
+      border: 1px solid rgba(0, 255, 255, 0.4);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+
+    .nav-item {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #b0b3c0;
+      font-size: 12px;
+      gap: 4px;
+      cursor: pointer;
+      transition: 0.2s;
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-weight: 500;
+    }
+
+    .nav-item i { font-size: 20px; }
+    .nav-item.active, .nav-item:active { color: #0ff; text-shadow: 0 0 5px #0ff; background: rgba(0,255,255,0.1); }
+
+    /* charts containers */
+    .chart-wrapper {
+      height: 240px;
+      margin-top: 16px;
+      position: relative;
+    }
+
+    /* custom scrollbar */
+    .snap-container::-webkit-scrollbar { width: 5px; }
+    .snap-container::-webkit-scrollbar-track { background: #0a0a12; }
+    .snap-container::-webkit-scrollbar-thumb { background: #0ff; border-radius: 20px; }
+
+    @media (max-width: 680px) {
+      .bottom-nav { gap: 8px; padding: 6px 12px; }
+      .nav-item span { display: none; }
+      .nav-item i { font-size: 22px; }
+      .value-large { font-size: 1.3rem; }
+      h2 { font-size: 1.3rem; }
+      .glass-card { padding: 18px; }
+    }
+
+    .glow-text {
+      text-shadow: 0 0 6px rgba(0,255,255,0.5);
+    }
+
+    footer {
+      font-size: 0.7rem;
+      text-align: center;
+      margin-top: 2rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-abstract"></div>
+<div class="animated-lines">
+  <svg viewBox="0 0 1200 800" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="gradLines" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#00ffff" stop-opacity="0.7"/>
+        <stop offset="50%" stop-color="#ff44ff" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#00aaff" stop-opacity="0.7"/>
+      </linearGradient>
+    </defs>
+    <path class="line-path" d="M100,200 C300,100 500,400 700,200 S1000,500 1150,300" />
+    <path class="line-path" d="M50,600 C250,700 450,500 650,650 S950,550 1150,700" style="animation-duration: 18s; animation-delay: -2s;"/>
+    <path class="line-path" d="M200,800 C400,600 600,750 800,500 S1100,400 1180,600" style="animation-duration: 22s; animation-delay: -5s;"/>
+    <path class="line-path" d="M20,300 C180,150 380,350 580,250 S880,450 1180,200" style="animation-duration: 16s; opacity:0.5;" />
+  </svg>
+</div>
+
+<div class="snap-container" id="snapContainer">
+  <!-- SCREEN 1 - LANDING + OVERVIEW -->
+  <section class="screen">
+    <div class="container">
+      <div class="glass-card" style="text-align: center;">
+        <div style="display:inline-flex; background: rgba(0,255,255,0.1); padding: 16px; border-radius: 60px; margin-bottom: 20px; border:1px solid #0ff;">
+          <i class="fas fa-bolt" style="font-size: 42px; color: #0ff;"></i>
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(120deg,#fff, #0ff); -webkit-background-clip:text; background-clip:text; color:transparent;">One‑click Asset Defense</h1>
+        <p style="font-size: 1.1rem; margin: 16px 0; color: #bfc9e6;">Advanced capacitor bank control • real‑time power factor correction • blockchain‑ready auditing</p>
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 24px 0;">
+          <div class="badge-neon"><i class="fas fa-microchip"></i> ESP32 SCADA</div>
+          <div class="badge-neon"><i class="fas fa-chart-line"></i> Cos φ Active Compensation</div>
+          <div class="badge-neon"><i class="fas fa-coins"></i> DeFi Energy Intelligence</div>
+        </div>
+        <div style="margin-top: 30px; background: rgba(0,0,0,0.5); border-radius: 2rem; padding: 18px;">
+          <i class="fas fa-user-astronaut"></i> <strong style="color:#0ff;">Farhan Ramadhani Nugraha</strong> — Next‑gen reactive power optimization with Marvell synergy.
+          <div style="margin-top: 14px; display: flex; justify-content: center; gap: 20px; font-size: 0.85rem;">
+            <span>📈 98.2% Efficiency</span> <span>⚡ 19.2 MVAr Capacity</span> <span>🔒 Latch Protection</span>
+          </div>
+        </div>
+        <footer>✦ Unlock your portfolio potential ✦</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2 - 3 PHASES STATUS & CAPACITOR STEPS -->
+  <section class="screen">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+        <h2><i class="fas fa-charging-station"></i> Tri-Phase Dynamics</h2>
+        <div class="badge-neon"><i class="fas fa-sync-alt"></i> Live Dummy Stream</div>
+      </div>
+      <div class="phase-grid" id="phaseCardsContainer">
+        <!-- dynamically filled -->
+      </div>
+      <div class="glass-card" style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <span><i class="fas fa-chart-simple"></i> <strong>Σ Power Factor (System Avg):</strong> <span id="sysAvgPf" class="value-large" style="font-size: 1.6rem;">0.00</span></span>
+          <span><i class="fas fa-layer-group"></i> <strong>Total Active Steps:</strong> <span id="totalSteps" class="glow-text">0</span> / 18</span>
+          <span><i class="fas fa-bolt"></i> Load Balance: <span id="loadBalanceStatus">⚡ Optimized</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3 - CAPACITOR BANK + COS PHI REAL-TIME MONITORING -->
+  <section class="screen">
+    <div class="container">
+      <h2><i class="fas fa-database"></i> Capacitor Bank & Cos φ Intelligence</h2>
+      <div class="phase-grid" id="capBankGrid"></div>
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span><i class="fas fa-chart-line"></i> <strong>Power Factor Trend (last 30 updates)</strong></span>
+          <span class="badge-neon">threshold 0.85</span>
+        </div>
+        <div class="chart-wrapper"><canvas id="pfRealtimeChart" width="400" height="180"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4 - CURRENT HISTORY (SESSION) -->
+  <section class="screen">
+    <div class="container">
+      <h2><i class="fas fa-waveform"></i> Amperage History (Session Log)</h2>
+      <div class="glass-card" style="margin-top: 20px;">
+        <div class="chart-wrapper" style="height: 280px;"><canvas id="currentHistoryChart"></canvas></div>
+        <div style="display: flex; justify-content: center; gap: 24px; margin-top: 20px;">
+          <span><i class="fas fa-circle" style="color:#ff3366;"></i> Arus R</span>
+          <span><i class="fas fa-circle" style="color:#0ff;"></i> Arus S</span>
+          <span><i class="fas fa-circle" style="color:#ffcc00;"></i> Arus T</span>
+        </div>
+        <footer class="glow-text" style="margin-top: 16px;">🔁 Auto‑adaptive step logic based on real‑time PF</footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item" data-index="0"><i class="fas fa-home"></i><span>Home</span></button>
+    <button class="nav-item" data-index="1"><i class="fas fa-bolt"></i><span>3 Fasa</span></button>
+    <button class="nav-item" data-index="2"><i class="fas fa-chart-pie"></i><span>Cos φ</span></button>
+    <button class="nav-item" data-index="3"><i class="fas fa-chart-bar"></i><span>Riwayat</span></button>
+  </div>
+</div>
+
+<script>
+  // --- DUMMY DATA SIMULATION (AMOLED dark theme, capacitor bank logic inspired by industry + asset defense)
+  const phases = ['R', 'S', 'T'];
+  // state for each phase
+  let phaseState = {
+    R: { V: 220, I: 1.2, pfRaw: 0.68, step: 0, actualPf: 0.68, active: 0, reactive: 0 },
+    S: { V: 221, I: 1.3, pfRaw: 0.71, step: 0, actualPf: 0.71, active: 0, reactive: 0 },
+    T: { V: 219, I: 1.25, pfRaw: 0.69, step: 0, actualPf: 0.69, active: 0, reactive: 0 }
+  };
+
+  // history arrays
+  let pfHistory = [];     // {timestamp, avg}
+  let currentHistory = []; // {timestamp, R, S, T}
+
+  let pfChart, currentChart;
+  let intervalId;
+
+  // Helper: update step based on target PF (0.92)
+  function computeStep(pfRawWithoutComp) {
+    let targetPf = 0.92;
+    let error = targetPf - pfRawWithoutComp;
+    if (error <= 0) return 0;
+    let stepNeeded = Math.min(6, Math.floor(error * 12)); // 12 factor: 0.08 error -> step 1 -> correct up to 0.03 each step
+    return Math.max(0, stepNeeded);
+  }
+
+  // compute actual PF after compensation: each step improves PF by ~0.025 (max cap 0.99)
+  function getCompensatedPf(rawPf, step) {
+    let improvement = step * 0.025;
+    return Math.min(0.99, rawPf + improvement);
+  }
+
+  // update power values
+  function updatePowers(phase) {
+    let { V, I, actualPf } = phaseState[phase];
+    let apparent = V * I;
+    let active = apparent * actualPf;
+    let reactive = Math.sqrt(Math.max(0, apparent*apparent - active*active));
+    phaseState[phase].active = active;
+    phaseState[phase].reactive = reactive;
+  }
+
+  // random walk but stable
+  function simulateNewData() {
+    phases.forEach(ph => {
+      let oldRaw = phaseState[ph].pfRaw;
+      let newRaw = oldRaw + (Math.random() - 0.5) * 0.02;
+      newRaw = Math.min(0.86, Math.max(0.55, newRaw));   // realistic industrial range
+      phaseState[ph].pfRaw = newRaw;
+      
+      // compute step based on raw pf (without comp)
+      let newStep = computeStep(newRaw);
+      phaseState[ph].step = newStep;
+      let compensatedPf = getCompensatedPf(newRaw, newStep);
+      phaseState[ph].actualPf = compensatedPf;
+      
+      // voltage small variation
+      phaseState[ph].V = 220 + (Math.random() - 0.5) * 4;
+      // current: varies with load, but slight impact from compensation (better pf reduces current slightly)
+      let loadBase = 0.9 + Math.random() * 1.1;
+      let reduction = (newStep / 12);  // step reduces current marginally
+      let finalI = Math.max(0.4, loadBase * (1 - reduction * 0.2));
+      phaseState[ph].I = parseFloat(finalI.toFixed(2));
+      
+      updatePowers(ph);
+    });
+  }
+
+  // generate timestamp string HH:MM:SS
+  function getTimestamp() {
+    let d = new Date();
+    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
+  }
+
+  // push to history & update charts
+  function updateHistoryAndCharts() {
+    let avgPf = (phaseState.R.actualPf + phaseState.S.actualPf + phaseState.T.actualPf) / 3;
+    let timeLabel = getTimestamp();
+    pfHistory.push({ time: timeLabel, value: avgPf });
+    if (pfHistory.length > 30) pfHistory.shift();
+    
+    let currR = phaseState.R.I;
+    let currS = phaseState.S.I;
+    let currT = phaseState.T.I;
+    currentHistory.push({ time: timeLabel, R: currR, S: currS, T: currT });
+    if (currentHistory.length > 80) currentHistory.shift();
+
+    // update pf chart
+    if (pfChart) {
+      let labels = pfHistory.map(h => h.time);
+      let values = pfHistory.map(h => h.value);
+      pfChart.data.labels = labels;
+      pfChart.data.datasets[0].data = values;
+      let thresholdArr = new Array(labels.length).fill(0.85);
+      pfChart.data.datasets[1].data = thresholdArr;
+      pfChart.update('none');
+    }
+    
+    // update current chart
+    if (currentChart) {
+      let labelsCurr = currentHistory.map(h => h.time);
+      let rData = currentHistory.map(h => h.R);
+      let sData = currentHistory.map(h => h.S);
+      let tData = currentHistory.map(h => h.T);
+      currentChart.data.labels = labelsCurr;
+      currentChart.data.datasets[0].data = rData;
+      currentChart.data.datasets[1].data = sData;
+      currentChart.data.datasets[2].data = tData;
+      currentChart.update('none');
+    }
+    
+    // update system avg and DOM elements on screen 2 and 3
+    document.getElementById('sysAvgPf').innerText = avgPf.toFixed(3);
+    let totalSteps = phaseState.R.step + phaseState.S.step + phaseState.T.step;
+    document.getElementById('totalSteps').innerText = totalSteps;
+    let imbalance = Math.max(Math.abs(phaseState.R.I - phaseState.S.I), Math.abs(phaseState.S.I - phaseState.T.I), Math.abs(phaseState.T.I - phaseState.R.I));
+    let balanceText = imbalance < 0.4 ? "⚡ Balanced" : (imbalance < 1.0 ? "⚠️ Moderate unbalance" : "🔴 High unbalance");
+    document.getElementById('loadBalanceStatus').innerHTML = balanceText;
+    
+    renderPhaseCards();
+    renderCapBankGrid();
+  }
+
+  // render 3-phase status cards (screen2)
+  function renderPhaseCards() {
+    const container = document.getElementById('phaseCardsContainer');
+    if (!container) return;
+    let html = '';
+    phases.forEach(ph => {
+      let data = phaseState[ph];
+      let stepArr = '';
+      for (let i=1;i<=6;i++) stepArr += `<div class="step-dot ${i <= data.step ? 'active' : ''}"></div>`;
+      let pfColor = data.actualPf >= 0.85 ? '#0ff' : (data.actualPf >= 0.7 ? '#faa' : '#f66');
+      html += `
+        <div class="glass-card phase-card">
+          <div style="display:flex; justify-content:space-between;">
+            <h3 style="font-size: 1.8rem; font-weight:800;">Fasa ${ph}</h3>
+            <i class="fas fa-microchip" style="color:#0ff;"></i>
+          </div>
+          <div style="margin-top: 12px; display:grid; grid-template-columns:1fr 1fr; gap: 10px;">
+            <div><i class="fas fa-bolt"></i> Teg: ${data.V.toFixed(1)} V</div>
+            <div><i class="fas fa-water"></i> Arus: ${data.I.toFixed(2)} A</div>
+            <div><i class="fas fa-chart-line"></i> PF: <strong style="color:${pfColor};">${data.actualPf.toFixed(3)}</strong></div>
+            <div><i class="fas fa-waveform"></i> Freq: ${(50 + (Math.random()*0.2)).toFixed(2)} Hz</div>
+            <div><i class="fas fa-solar-panel"></i> Aktif: ${data.active.toFixed(0)} W</div>
+            <div><i class="fas fa-coil"></i> Reaktif: ${data.reactive.toFixed(0)} VAR</div>
+          </div>
+          <div style="margin-top: 12px;"><i class="fas fa-layer-group"></i> Step Kapasitor: ${data.step}/6</div>
+          <div class="step-indicator" style="display: flex; gap: 6px; margin-top: 5px;">${stepArr}</div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  // capacitor bank grid (screen3) with step control & cos phi
+  function renderCapBankGrid() {
+    const grid = document.getElementById('capBankGrid');
+    if (!grid) return;
+    let html = '';
+    phases.forEach(ph => {
+      let data = phaseState[ph];
+      let stepDots = '';
+      for (let i=1;i<=6;i++) stepDots += `<div class="step-dot ${i <= data.step ? 'active' : ''}"></div>`;
+      let activeClass = data.step > 0 ? 'badge-neon' : '';
+      html += `
+        <div class="glass-card" style="text-align:center;">
+          <h4 style="font-size:1.6rem;">Fasa ${ph}</h4>
+          <div style="font-size: 2rem; font-weight: bold; margin:8px 0;">${data.actualPf.toFixed(3)}</div>
+          <div><i class="fas fa-battery-full"></i> Step aktif: <strong>${data.step}</strong></div>
+          <div class="step-indicator" style="display: flex; gap: 6px; justify-content:center; margin:12px 0;">${stepDots}</div>
+          ${data.step > 0 ? '<div class="badge-neon" style="display:inline-block;"><i class="fas fa-check-circle"></i> Kompensasi aktif</div>' : '<div style="color:#aaa;">⚡ Menunggu koreksi</div>'}
+        </div>
+      `;
+    });
+    grid.innerHTML = html;
+  }
+
+  // initialize charts
+  function initCharts() {
+    const pfCtx = document.getElementById('pfRealtimeChart').getContext('2d');
+    pfChart = new Chart(pfCtx, {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'Cos φ (avg)', data: [], borderColor: '#0ff', backgroundColor: 'rgba(0,255,255,0.05)', borderWidth: 3, pointRadius: 2, fill: true, tension: 0.2 },
+          { label: 'Threshold 0.85', data: [], borderColor: '#ffaa44', borderWidth: 2, borderDash: [8,6], pointRadius: 0, fill: false }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0.4, max: 1.0, grid: { color: 'rgba(100,100,150,0.2)' } } }, plugins: { legend: { labels: { color: '#ccc' } } } }
+    });
+    
+    const currCtx = document.getElementById('currentHistoryChart').getContext('2d');
+    currentChart = new Chart(currCtx, {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'Arus R (A)', data: [], borderColor: '#ff3366', borderWidth: 2, pointRadius: 1, tension: 0.2 },
+          { label: 'Arus S (A)', data: [], borderColor: '#0ff', borderWidth: 2, pointRadius: 1, tension: 0.2 },
+          { label: 'Arus T (A)', data: [], borderColor: '#ffcc00', borderWidth: 2, pointRadius: 1, tension: 0.2 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(80,80,120,0.2)' } } }, plugins: { legend: { labels: { color: '#ccc' } } } }
+    });
+  }
+  
+  // main loop simulate dummy data every 1.4s
+  function startSimulation() {
+    simulateNewData();
+    updateHistoryAndCharts();
+    intervalId = setInterval(() => {
+      simulateNewData();
+      updateHistoryAndCharts();
+    }, 1400);
+  }
+
+  // scroll to screen with bottom nav
+  function setupNav() {
+    const btns = document.querySelectorAll('.nav-item');
+    const container = document.getElementById('snapContainer');
+    btns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(btn.getAttribute('data-index'), 10);
+        if (container) {
+          const screenHeight = window.innerHeight;
+          container.scrollTo({ top: index * screenHeight, behavior: 'smooth' });
+        }
+        // remove active then add
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setTimeout(() => { btn.classList.remove('active'); }, 300);
+      });
+    });
+    // optional: highlight on scroll? not needed.
+  }
+  
+  // initial render + start
+  window.addEventListener('load', () => {
+    initCharts();
+    // initial dummy data generation
+    for(let i=0;i<5;i++) simulateNewData();
+    renderPhaseCards();
+    renderCapBankGrid();
+    updateHistoryAndCharts();
+    startSimulation();
+    setupNav();
+  });
+</script>
+</body>
+</html>

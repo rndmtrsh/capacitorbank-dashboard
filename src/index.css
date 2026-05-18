@@ -1,0 +1,112 @@
+@font-face {
+  font-family: 'PP Mori';
+  src: local('PP Mori'), local('PPMori');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #05070d;
+  --panel: rgba(10, 16, 24, 0.8);
+  --panel-strong: rgba(8, 12, 18, 0.92);
+  --line: rgba(94, 210, 200, 0.28);
+  --accent: #45f0d2;
+  --accent-strong: #8df7ff;
+  --accent-warm: #f6b15a;
+  --text: #e6f4fb;
+  --muted: #a2b3c2;
+  --shadow: 0 24px 50px rgba(3, 8, 12, 0.45);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --font-sans: 'PP Mori', 'Space Grotesk', 'Manrope', sans-serif;
+
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+}
+
+::selection {
+  background: rgba(69, 240, 210, 0.3);
+  color: var(--text);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(6, 10, 16, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(69, 240, 210, 0.6);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .snap-container {
+    scroll-behavior: auto;
+  }
+}
