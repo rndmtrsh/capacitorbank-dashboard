@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
+import { getAnalytics } from 'firebase/analytics'
 import { DataSnapshot, getDatabase, onValue, ref } from 'firebase/database'
 import {
   Chart,
@@ -30,17 +31,20 @@ type PhaseState = {
 
 const PHASES: PhaseKey[] = ['R', 'S', 'T']
 const firebaseConfig = {
-  apiKey: 'AIzaSyDxwJ7coDcA81U-zbOuz7uWYL9EsaMUpxM',
-  authDomain: 'elskripsi-c3791.firebaseapp.com',
-  databaseURL: 'https://elskripsi-c3791-default-rtdb.firebaseio.com',
-  projectId: 'elskripsi-c3791',
-  storageBucket: 'elskripsi-c3791.firebasestorage.app',
-  messagingSenderId: '1005040577331',
-  appId: '1:1005040577331:web:dee1eab35b4f2b1f7c2c46',
-  measurementId: 'G-ZTEN191QSQ',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 const firebaseApp = initializeApp(firebaseConfig)
+if (import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) {
+  getAnalytics(firebaseApp)
+}
 const realtimeDb = getDatabase(firebaseApp)
 
 const STATIC_PF_VALUES = [
