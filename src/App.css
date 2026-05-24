@@ -13,6 +13,10 @@
   z-index: -1;
   opacity: 0.4;
   background-image:
+    radial-gradient(
+      rgba(15, 35, 45, 0.06) 0.8px,
+      transparent 0.8px
+    ),
     repeating-linear-gradient(
       45deg,
       rgba(15, 35, 45, 0.04) 0px,
@@ -21,6 +25,8 @@
       transparent 32px
     ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 246, 242, 0.95));
+  background-size: 28px 28px, auto, auto;
+  background-position: 0 0, 0 0, 0 0;
 }
 
 .bg {
@@ -32,6 +38,43 @@
     radial-gradient(900px 700px at 110% 10%, rgba(31, 111, 224, 0.12), transparent 55%),
     linear-gradient(180deg, #f8f6f2, #eef1ee);
   overflow: hidden;
+}
+
+.bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      rgba(15, 35, 45, 0.08) 0px,
+      rgba(15, 35, 45, 0.08) 1px,
+      transparent 1px,
+      transparent 30px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(15, 35, 45, 0.05) 0px,
+      rgba(15, 35, 45, 0.05) 1px,
+      transparent 1px,
+      transparent 160px
+    );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
 }
 
 .ambient {
@@ -111,7 +154,7 @@
 
 .glass-card {
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 2px solid rgba(16, 96, 106, 0.28);
   border-radius: var(--radius-xl);
   padding: 28px;
   box-shadow: var(--shadow);
