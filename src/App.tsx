@@ -395,9 +395,9 @@ function App() {
     chartInstances.current.pf?.destroy()
     chartInstances.current.current?.destroy()
 
-    const gridColor = 'rgba(140, 180, 210, 0.12)'
-    const axisColor = 'rgba(140, 180, 210, 0.35)'
-    const tickColor = 'rgba(170, 190, 210, 0.6)'
+    const gridColor = 'rgba(15, 30, 45, 0.08)'
+    const axisColor = 'rgba(15, 30, 45, 0.2)'
+    const tickColor = 'rgba(35, 55, 70, 0.7)'
     const endPointRadius = (lastIndex: number) =>
       (ctx: ScriptableContext<'line'>) =>
         ctx.dataIndex === lastIndex ? 3 : 0
@@ -411,21 +411,21 @@ function App() {
           {
             label: 'Cos phi (avg)',
             data: STATIC_PF_VALUES,
-            borderColor: '#45f0d2',
-            backgroundColor: 'rgba(69, 240, 210, 0.18)',
+            borderColor: '#1a9d8a',
+            backgroundColor: 'rgba(26, 157, 138, 0.16)',
             fill: true,
             tension: 0.35,
             borderWidth: 2.4,
             pointRadius: endPointRadius(pfLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#8df7ff',
-            pointBorderColor: '#0b1a22',
+            pointBackgroundColor: '#4cc7b4',
+            pointBorderColor: '#f7f8fa',
             pointBorderWidth: 1,
           },
           {
             label: 'Threshold 0.85',
             data: STATIC_PF_VALUES.map(() => 0.85),
-            borderColor: 'rgba(246, 196, 138, 0.7)',
+            borderColor: 'rgba(242, 164, 82, 0.75)',
             borderWidth: 1.2,
             borderDash: [6, 6],
             pointRadius: 0,
@@ -441,11 +441,11 @@ function App() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(8, 12, 18, 0.85)',
-            borderColor: 'rgba(69, 240, 210, 0.35)',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: 'rgba(26, 157, 138, 0.25)',
             borderWidth: 1,
-            titleColor: '#e6f4fb',
-            bodyColor: '#c6d2de',
+            titleColor: '#0f1b23',
+            bodyColor: '#4c5f6e',
           },
         },
         scales: {
@@ -482,37 +482,37 @@ function App() {
           {
             label: 'Phase R',
             data: STATIC_CURRENT_VALUES.R,
-            borderColor: '#ff6b6b',
+            borderColor: '#d96262',
             borderWidth: 2.2,
             tension: 0.35,
             pointRadius: endPointRadius(currentLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#ff9a9a',
-            pointBorderColor: '#1a0f12',
+            pointBackgroundColor: '#f3a1a1',
+            pointBorderColor: '#fff4f4',
             pointBorderWidth: 1,
           },
           {
             label: 'Phase S',
             data: STATIC_CURRENT_VALUES.S,
-            borderColor: '#45f0d2',
+            borderColor: '#1a9d8a',
             borderWidth: 2.2,
             tension: 0.35,
             pointRadius: endPointRadius(currentLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#8df7ff',
-            pointBorderColor: '#0b1a22',
+            pointBackgroundColor: '#4cc7b4',
+            pointBorderColor: '#f7f8fa',
             pointBorderWidth: 1,
           },
           {
             label: 'Phase T',
             data: STATIC_CURRENT_VALUES.T,
-            borderColor: '#f6b15a',
+            borderColor: '#f2a452',
             borderWidth: 2.2,
             tension: 0.35,
             pointRadius: endPointRadius(currentLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#ffd08a',
-            pointBorderColor: '#1a140a',
+            pointBackgroundColor: '#f7c079',
+            pointBorderColor: '#fff6ea',
             pointBorderWidth: 1,
           },
         ],
@@ -525,11 +525,11 @@ function App() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(8, 12, 18, 0.85)',
-            borderColor: 'rgba(69, 240, 210, 0.35)',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: 'rgba(26, 157, 138, 0.25)',
             borderWidth: 1,
-            titleColor: '#e6f4fb',
-            bodyColor: '#c6d2de',
+            titleColor: '#0f1b23',
+            bodyColor: '#4c5f6e',
           },
         },
         scales: {
@@ -619,9 +619,9 @@ function App() {
         >
           <defs>
             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#45f0d2" stopOpacity="0.7" />
-              <stop offset="50%" stopColor="#58a6ff" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#f6b15a" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#1a9d8a" stopOpacity="0.65" />
+              <stop offset="50%" stopColor="#1f6fe0" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#f2a452" stopOpacity="0.55" />
             </linearGradient>
           </defs>
           <path
