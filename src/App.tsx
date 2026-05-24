@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { initializeApp } from 'firebase/app'
+import { DataSnapshot, getDatabase, onValue, ref } from 'firebase/database'
 import {
   Chart,
   CategoryScale,
@@ -27,9 +29,19 @@ type PhaseState = {
 }
 
 const PHASES: PhaseKey[] = ['R', 'S', 'T']
-const TARGET_PF = 0.92
-const REALTIME_URL =
-  'https://elskripsi-c3791-default-rtdb.firebaseio.com/.json'
+const firebaseConfig = {
+  apiKey: 'AIzaSyDxwJ7coDcA81U-zbOuz7uWYL9EsaMUpxM',
+  authDomain: 'elskripsi-c3791.firebaseapp.com',
+  databaseURL: 'https://elskripsi-c3791-default-rtdb.firebaseio.com',
+  projectId: 'elskripsi-c3791',
+  storageBucket: 'elskripsi-c3791.firebasestorage.app',
+  messagingSenderId: '1005040577331',
+  appId: '1:1005040577331:web:dee1eab35b4f2b1f7c2c46',
+  measurementId: 'G-ZTEN191QSQ',
+}
+
+const firebaseApp = initializeApp(firebaseConfig)
+const realtimeDb = getDatabase(firebaseApp)
 
 const STATIC_PF_VALUES = [
   0.76, 0.78, 0.79, 0.8, 0.82, 0.81, 0.83, 0.84, 0.85, 0.84,
@@ -66,14 +78,8 @@ Chart.register(
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
-const computeStep = (pfRaw: number) => {
-  const error = TARGET_PF - pfRaw
-  if (error <= 0) return 0
-  return Math.min(6, Math.floor(error * 12))
-}
-
 const compensatePf = (pfRaw: number, step: number) =>
-  clamp(pfRaw + step * 0.025, 0.55, 0.99)
+  clamp(pfRaw + step * 0.025, 0, 1)
 
 const computePowers = (voltage: number, current: number, pf: number) => {
   const apparent = voltage * current
@@ -116,37 +122,14 @@ const normalizeRange = (
 ) => (value !== null && value >= min && value <= max ? value : fallback)
 
 const createPhaseSeed = (phase: PhaseKey): PhaseState => {
-  const pfRaw = 0.62 + Math.random() * 0.2
-  const step = computeStep(pfRaw)
-  const pf = compensatePf(pfRaw, step)
-  const voltage = 220 + (Math.random() - 0.5) * 4
-  const loadBase = 0.9 + Math.random() * 1.1
-  const reduction = step / 12
-  const current = Math.max(0.4, loadBase * (1 - reduction * 0.2))
+  const voltage = 0
+  const current = 0
+  const pfRaw = 0
+  const pf = 0
+  const step = 0
   const { activePower, reactivePower } = computePowers(voltage, current, pf)
   return {
     phase,
-    voltage,
-    current,
-    pfRaw,
-    pf,
-    step,
-    activePower,
-    reactivePower,
-  }
-}
-
-const simulatePhase = (phase: PhaseState): PhaseState => {
-  const pfRaw = clamp(phase.pfRaw + (Math.random() - 0.5) * 0.02, 0.56, 0.88)
-  const step = computeStep(pfRaw)
-  const pf = compensatePf(pfRaw, step)
-  const voltage = 220 + (Math.random() - 0.5) * 4
-  const loadBase = 0.9 + Math.random() * 1.1
-  const reduction = step / 12
-  const current = Math.max(0.35, loadBase * (1 - reduction * 0.2))
-  const { activePower, reactivePower } = computePowers(voltage, current, pf)
-  return {
-    ...phase,
     voltage,
     current,
     pfRaw,
@@ -164,14 +147,14 @@ const buildPhaseFromRealtime = (
 ): PhaseState => {
   const voltage = normalizeRange(
     parseNumber(payload.tegangan),
-    50,
-    300,
+    0,
+    600,
     fallback.voltage,
   )
   const current = normalizeRange(
     parseNumber(payload.arus),
-    0.1,
-    50,
+    0,
+    200,
     fallback.current,
   )
   const stepProvided = parseNumber(payload.step)
@@ -180,10 +163,10 @@ const buildPhaseFromRealtime = (
     : fallback.step
   const pfProvided = parseNumber(payload.pf)
   const pfRaw = pfProvided !== null
-    ? clamp(pfProvided - step * 0.025, 0.4, 0.99)
+    ? clamp(pfProvided - step * 0.025, 0, 1)
     : fallback.pfRaw
   const pf = pfProvided !== null
-    ? clamp(pfProvided, 0.4, 0.99)
+    ? clamp(pfProvided, 0, 1)
     : compensatePf(pfRaw, step)
   const { activePower, reactivePower } = computePowers(voltage, current, pf)
   const activeProvided = parseNumber(payload.aktif)
@@ -211,7 +194,7 @@ const mergeRealtime = (
       createPhaseSeed(phaseKey)
     const phasePayload = payload?.[phaseKey]
     if (!phasePayload) {
-      return simulatePhase(fallback)
+      return fallback
     }
     return buildPhaseFromRealtime(phaseKey, phasePayload, fallback)
   })
@@ -335,23 +318,21 @@ function App() {
   const currentChartRef = useRef<HTMLCanvasElement | null>(null)
   const chartInstances = useRef<{ pf?: Chart; current?: Chart }>({})
 
-  const fetchRealtime = useCallback(async () => {
-    if (document.hidden) return
-    try {
-      const response = await fetch(REALTIME_URL)
-      if (!response.ok) throw new Error('Failed to fetch realtime data')
-      const payload = (await response.json()) as RealtimePayload
-      setPhases((prev) => mergeRealtime(payload, prev))
-    } catch {
-      setPhases((prev) => prev.map((phase) => simulatePhase(phase)))
-    }
-  }, [])
-
   useEffect(() => {
-    fetchRealtime()
-    const id = window.setInterval(fetchRealtime, 5000)
-    return () => window.clearInterval(id)
-  }, [fetchRealtime])
+    const realtimeRef = ref(realtimeDb)
+    const unsubscribe = onValue(
+      realtimeRef,
+      (snapshot: DataSnapshot) => {
+        const payload = snapshot.val() as RealtimePayload | null
+        setPhases((prev) => mergeRealtime(payload, prev))
+      },
+      () => {
+        setPhases((prev) => prev)
+      },
+    )
+
+    return () => unsubscribe()
+  }, [])
 
   useEffect(() => {
     const container = containerRef.current
