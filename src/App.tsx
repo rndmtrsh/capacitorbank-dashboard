@@ -163,7 +163,7 @@ const buildPhaseFromRealtime = (
   )
   const stepProvided = parseNumber(payload.step)
   const step = stepProvided !== null
-    ? clamp(Math.round(stepProvided), 0, 6)
+    ? clamp(Math.round(stepProvided), 0, 4)
     : fallback.step
   const pfProvided = parseNumber(payload.pf)
   const pfRaw = pfProvided !== null
@@ -380,9 +380,9 @@ function App() {
     chartInstances.current.pf?.destroy()
     chartInstances.current.current?.destroy()
 
-    const gridColor = 'rgba(15, 30, 45, 0.08)'
-    const axisColor = 'rgba(15, 30, 45, 0.2)'
-    const tickColor = 'rgba(35, 55, 70, 0.7)'
+    const gridColor = 'rgba(18, 60, 40, 0.08)'
+    const axisColor = 'rgba(18, 60, 40, 0.2)'
+    const tickColor = 'rgba(35, 70, 55, 0.7)'
     const endPointRadius = (lastIndex: number) =>
       (ctx: ScriptableContext<'line'>) =>
         ctx.dataIndex === lastIndex ? 3 : 0
@@ -396,15 +396,15 @@ function App() {
           {
             label: 'Cos phi (avg)',
             data: STATIC_PF_VALUES,
-            borderColor: '#1a9d8a',
-            backgroundColor: 'rgba(26, 157, 138, 0.16)',
+            borderColor: '#1f8f5f',
+            backgroundColor: 'rgba(31, 143, 95, 0.16)',
             fill: true,
             tension: 0.35,
             borderWidth: 2.4,
             pointRadius: endPointRadius(pfLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#4cc7b4',
-            pointBorderColor: '#f7f8fa',
+            pointBackgroundColor: '#5acc9a',
+            pointBorderColor: '#edf6f0',
             pointBorderWidth: 1,
           },
           {
@@ -426,11 +426,11 @@ function App() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderColor: 'rgba(26, 157, 138, 0.25)',
+            backgroundColor: 'rgba(230, 244, 234, 0.96)',
+            borderColor: 'rgba(24, 122, 83, 0.25)',
             borderWidth: 1,
-            titleColor: '#0f1b23',
-            bodyColor: '#4c5f6e',
+            titleColor: '#0f1f18',
+            bodyColor: '#4b6256',
           },
         },
         scales: {
@@ -479,13 +479,13 @@ function App() {
           {
             label: 'Phase S',
             data: STATIC_CURRENT_VALUES.S,
-            borderColor: '#1a9d8a',
+            borderColor: '#1f8f5f',
             borderWidth: 2.2,
             tension: 0.35,
             pointRadius: endPointRadius(currentLastIndex),
             pointHoverRadius: 4,
-            pointBackgroundColor: '#4cc7b4',
-            pointBorderColor: '#f7f8fa',
+            pointBackgroundColor: '#5acc9a',
+            pointBorderColor: '#edf6f0',
             pointBorderWidth: 1,
           },
           {
@@ -510,11 +510,11 @@ function App() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderColor: 'rgba(26, 157, 138, 0.25)',
+            backgroundColor: 'rgba(230, 244, 234, 0.96)',
+            borderColor: 'rgba(24, 122, 83, 0.25)',
             borderWidth: 1,
-            titleColor: '#0f1b23',
-            bodyColor: '#4c5f6e',
+            titleColor: '#0f1f18',
+            bodyColor: '#4b6256',
           },
         },
         scales: {
@@ -604,26 +604,26 @@ function App() {
         >
           <defs>
             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#1a9d8a" stopOpacity="0.65" />
-              <stop offset="50%" stopColor="#1f6fe0" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#f2a452" stopOpacity="0.55" />
+              <stop offset="0%" stopColor="#1f8f5f" stopOpacity="0.6" />
+              <stop offset="50%" stopColor="#6bcf8d" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#b7e2a2" stopOpacity="0.55" />
             </linearGradient>
           </defs>
           <path
             className="line-path"
-            d="M100,200 C300,100 520,380 720,220 S1000,520 1150,310"
+            d="M-120,120 L1320,-120"
           />
           <path
             className="line-path slow"
-            d="M70,620 C260,720 460,520 680,660 S980,580 1150,720"
+            d="M-120,320 L1320,80"
           />
           <path
             className="line-path"
-            d="M120,760 C340,600 580,740 820,520 S1060,410 1180,620"
+            d="M-120,520 L1320,280"
           />
           <path
             className="line-path subtle"
-            d="M30,320 C200,140 420,360 620,260 S880,470 1180,230"
+            d="M-120,720 L1320,480"
           />
         </svg>
       </div>
@@ -698,11 +698,11 @@ function App() {
                 </div>
                 <p>
                   Phase diagnostics, reactive power tracking, and compact
-                  monitoring for all six steps per phase.
+                  monitoring for all four steps per phase.
                 </p>
                 <div className="tag-row">
                   <span className="tag">3 phase</span>
-                  <span className="tag">6 step</span>
+                  <span className="tag">4 step</span>
                 </div>
               </div>
               <div
@@ -743,7 +743,7 @@ function App() {
                   <span className="icon-tile compact">
                     <IconBolt className="title-icon" />
                   </span>
-                  Tri phase status
+                  Three phase status
                 </h2>
                 <p className="section-subtitle">
                   Live electrical balance with capacitor step visibility.
@@ -796,10 +796,10 @@ function App() {
                     </div>
                     <div className="step-row">
                       <span>Capacitor steps</span>
-                      <strong>{phase.step}/6</strong>
+                      <strong>{phase.step}/4</strong>
                     </div>
                     <div className="step-dots">
-                      {Array.from({ length: 6 }, (_, index) => (
+                      {Array.from({ length: 4 }, (_, index) => (
                         <span
                           key={index}
                           className={`step-dot ${
@@ -820,7 +820,7 @@ function App() {
               </div>
               <div>
                 <p className="metric-label">Total active steps</p>
-                <p className="value-large">{totalSteps} / 18</p>
+                <p className="value-large">{totalSteps} / 12</p>
               </div>
               <div>
                 <p className="metric-label">Load balance</p>
@@ -871,7 +871,7 @@ function App() {
                   </div>
                   <p className="cap-pf">{phase.pf.toFixed(3)}</p>
                   <div className="step-dots center">
-                    {Array.from({ length: 6 }, (_, index) => (
+                    {Array.from({ length: 4 }, (_, index) => (
                       <span
                         key={index}
                         className={`step-dot ${
@@ -880,7 +880,7 @@ function App() {
                       />
                     ))}
                   </div>
-                  <p className="cap-meta">Active steps {phase.step}/6</p>
+                  <p className="cap-meta">Active steps {phase.step}/4</p>
                 </div>
               ))}
             </div>

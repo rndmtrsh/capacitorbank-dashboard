@@ -7,16 +7,16 @@
 }
 
 :root {
-  --bg: #f6f4ef;
-  --panel: rgba(255, 255, 255, 0.86);
-  --panel-strong: rgba(255, 255, 255, 0.96);
-  --line: rgba(16, 96, 106, 0.18);
-  --accent: #1a9d8a;
-  --accent-strong: #1f6fe0;
-  --accent-warm: #f2a452;
-  --text: #0f1b23;
-  --muted: #526575;
-  --shadow: 0 16px 28px rgba(18, 32, 45, 0.12);
+  --bg: #e5f1e7;
+  --panel: rgba(230, 244, 234, 0.88);
+  --panel-strong: rgba(236, 248, 240, 0.96);
+  --line: rgba(18, 90, 60, 0.18);
+  --accent: #1f8f5f;
+  --accent-strong: #166a46;
+  --accent-warm: #d9a441;
+  --text: #0f2018;
+  --muted: #516a5c;
+  --shadow: 0 16px 28px rgba(12, 34, 22, 0.12);
   --radius-xl: 28px;
   --radius-lg: 22px;
   --radius-md: 16px;
@@ -83,7 +83,7 @@ svg {
 }
 
 ::selection {
-  background: rgba(26, 157, 138, 0.2);
+  background: rgba(31, 143, 95, 0.2);
   color: var(--text);
 }
 
@@ -92,11 +92,11 @@ svg {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 30, 45, 0.08);
+  background: rgba(20, 60, 40, 0.08);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(26, 157, 138, 0.6);
+  background: rgba(31, 143, 95, 0.6);
   border-radius: 999px;
 }
 
