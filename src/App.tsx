@@ -306,8 +306,8 @@ const IconStack = ({ className }: IconProps) => (
 
 const navItems = [
   { label: 'Home', icon: IconHome },
-  { label: '3 Phase', icon: IconBolt },
-  { label: 'Cos phi', icon: IconChart },
+  { label: '3-Phase', icon: IconBolt },
+  { label: 'Cos φ', icon: IconChart },
   { label: 'History', icon: IconPulse },
 ]
 
@@ -650,15 +650,15 @@ function App() {
                 Sistem Pengendalian Adaptif & Monitoring Real-time.
               </p>
               <div className="hero-metrics">
-                <div>
+                <div className="metric-card">
                   <p className="metric-label">Target PF</p>
                   <p className="metric-value">0.92</p>
                 </div>
-                <div>
+                <div className="metric-card">
                   <p className="metric-label">Capacity</p>
                   <p className="metric-value">19.2 MVAR</p>
                 </div>
-                <div>
+                <div className="metric-card">
                   <p className="metric-label">Efficiency</p>
                   <p className="metric-value">98.2%</p>
                 </div>
