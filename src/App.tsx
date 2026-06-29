@@ -12,7 +12,6 @@ import {
   LinearScale,
   PointElement,
   Tooltip,
-  type ScriptableContext,
 } from 'chart.js'
 import './App.css'
 
@@ -47,26 +46,13 @@ if (import.meta.env.FARHAN_FIREBASE_MEASUREMENT_ID) {
 }
 const realtimeDb = getDatabase(firebaseApp)
 
-const STATIC_PF_VALUES = [
-  0.76, 0.78, 0.79, 0.8, 0.82, 0.81, 0.83, 0.84, 0.85, 0.84,
-  0.86, 0.87, 0.88, 0.86, 0.87, 0.89, 0.9, 0.89, 0.9, 0.91,
-  0.9, 0.91, 0.92, 0.91, 0.9, 0.89, 0.9, 0.91, 0.92, 0.91,
-]
-
-const STATIC_CURRENT_VALUES = {
-  R: [
-    1.05, 1.12, 1.18, 1.1, 0.98, 1.04, 1.2, 1.26, 1.18, 1.1, 1.06, 1.12,
-    1.24, 1.3, 1.22, 1.14, 1.08, 1.02, 1.12, 1.2, 1.16, 1.08, 1.02, 1.1,
-  ],
-  S: [
-    1.0, 1.06, 1.12, 1.08, 0.96, 1.02, 1.16, 1.22, 1.14, 1.06, 1.02, 1.08,
-    1.18, 1.24, 1.16, 1.08, 1.02, 0.98, 1.06, 1.14, 1.1, 1.02, 0.96, 1.04,
-  ],
-  T: [
-    1.08, 1.14, 1.2, 1.12, 1.0, 1.06, 1.22, 1.28, 1.2, 1.12, 1.08, 1.14,
-    1.26, 1.32, 1.24, 1.16, 1.1, 1.04, 1.14, 1.22, 1.18, 1.1, 1.04, 1.12,
-  ],
-}
+const MAX_TREND_POINTS = 90
+const timeLabelFormatter = new Intl.DateTimeFormat('id-ID', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+})
 
 Chart.register(
   LineController,
@@ -109,6 +95,12 @@ type RealtimePhasePayload = {
 
 type RealtimePayload = Partial<Record<PhaseKey, RealtimePhasePayload>>
 
+type TrendHistory = {
+  labels: string[]
+  pf: number[]
+  current: Record<PhaseKey, number[]>
+}
+
 const parseNumber = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value === 'string' && value.trim() !== '') {
@@ -124,6 +116,16 @@ const normalizeRange = (
   max: number,
   fallback: number,
 ) => (value !== null && value >= min && value <= max ? value : fallback)
+
+const createEmptyTrendHistory = (): TrendHistory => ({
+  labels: [],
+  pf: [],
+  current: {
+    R: [],
+    S: [],
+    T: [],
+  },
+})
 
 const createPhaseSeed = (phase: PhaseKey): PhaseState => {
   const voltage = 0
@@ -202,6 +204,51 @@ const mergeRealtime = (
     }
     return buildPhaseFromRealtime(phaseKey, phasePayload, fallback)
   })
+
+const hasRealtimePayload = (payload: RealtimePayload | null) =>
+  payload !== null && PHASES.some((phase) => Boolean(payload[phase]))
+
+const appendTrendHistory = (
+  trend: TrendHistory,
+  phases: PhaseState[],
+): TrendHistory => {
+  const byPhase = phases.reduce<Record<PhaseKey, PhaseState>>(
+    (acc, phase) => {
+      acc[phase.phase] = phase
+      return acc
+    },
+    {
+      R: createPhaseSeed('R'),
+      S: createPhaseSeed('S'),
+      T: createPhaseSeed('T'),
+    },
+  )
+
+  const labels = [...trend.labels, timeLabelFormatter.format(new Date())].slice(
+    -MAX_TREND_POINTS,
+  )
+  const pf = [...trend.pf, averagePf(phases)].slice(-MAX_TREND_POINTS)
+
+  return {
+    labels,
+    pf,
+    current: {
+      R: [...trend.current.R, byPhase.R.current].slice(-MAX_TREND_POINTS),
+      S: [...trend.current.S, byPhase.S.current].slice(-MAX_TREND_POINTS),
+      T: [...trend.current.T, byPhase.T.current].slice(-MAX_TREND_POINTS),
+    },
+  }
+}
+
+const calculateSummary = (series: number[]) => {
+  if (series.length === 0) {
+    return { value: null, delta: 0, isUp: true }
+  }
+  const last = series[series.length - 1]
+  const prev = series[series.length - 2] ?? last
+  const delta = prev !== 0 ? ((last - prev) / prev) * 100 : 0
+  return { value: last, delta, isUp: delta >= 0 }
+}
 
 type IconProps = {
   className?: string
@@ -312,8 +359,14 @@ const navItems = [
 ]
 
 function App() {
-  const [phases, setPhases] = useState<PhaseState[]>(() =>
-    PHASES.map((phase) => createPhaseSeed(phase)),
+  const initialPhases = useMemo(
+    () => PHASES.map((phase) => createPhaseSeed(phase)),
+    [],
+  )
+  const [phases, setPhases] = useState<PhaseState[]>(initialPhases)
+  const phasesRef = useRef<PhaseState[]>(initialPhases)
+  const [trendHistory, setTrendHistory] = useState<TrendHistory>(
+    createEmptyTrendHistory,
   )
   const [activeIndex, setActiveIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -328,7 +381,11 @@ function App() {
       realtimeRef,
       (snapshot: DataSnapshot) => {
         const payload = snapshot.val() as RealtimePayload | null
-        setPhases((prev) => mergeRealtime(payload, prev))
+        if (!hasRealtimePayload(payload)) return
+        const nextPhases = mergeRealtime(payload, phasesRef.current)
+        phasesRef.current = nextPhases
+        setPhases(nextPhases)
+        setTrendHistory((prev) => appendTrendHistory(prev, nextPhases))
       },
       () => {
         setPhases((prev) => prev)
@@ -359,15 +416,6 @@ function App() {
     return () => observer.disconnect()
   }, [])
 
-  const pfLabels = useMemo(
-    () => STATIC_PF_VALUES.map((_, index) => `${index + 1}`),
-    [],
-  )
-  const currentLabels = useMemo(
-    () => STATIC_CURRENT_VALUES.R.map((_, index) => `${index + 1}`),
-    [],
-  )
-
   useEffect(() => {
     const pfCanvas = pfChartRef.current
     const currentCanvas = currentChartRef.current
@@ -383,25 +431,20 @@ function App() {
     const gridColor = 'rgba(18, 60, 40, 0.08)'
     const axisColor = 'rgba(18, 60, 40, 0.2)'
     const tickColor = 'rgba(35, 70, 55, 0.7)'
-    const endPointRadius = (lastIndex: number) =>
-      (ctx: ScriptableContext<'line'>) =>
-        ctx.dataIndex === lastIndex ? 3 : 0
-
-    const pfLastIndex = STATIC_PF_VALUES.length - 1
     chartInstances.current.pf = new Chart(pfCtx, {
       type: 'line',
       data: {
-        labels: pfLabels,
+        labels: trendHistory.labels,
         datasets: [
           {
             label: 'Cos phi (avg)',
-            data: STATIC_PF_VALUES,
+            data: trendHistory.pf,
             borderColor: '#1f8f5f',
             backgroundColor: 'rgba(31, 143, 95, 0.16)',
             fill: true,
             tension: 0.35,
             borderWidth: 2.4,
-            pointRadius: endPointRadius(pfLastIndex),
+            pointRadius: 0,
             pointHoverRadius: 4,
             pointBackgroundColor: '#5acc9a',
             pointBorderColor: '#edf6f0',
@@ -409,7 +452,7 @@ function App() {
           },
           {
             label: 'Threshold 0.85',
-            data: STATIC_PF_VALUES.map(() => 0.85),
+            data: trendHistory.labels.map(() => 0.85),
             borderColor: 'rgba(242, 164, 82, 0.75)',
             borderWidth: 1.2,
             borderDash: [6, 6],
@@ -450,11 +493,10 @@ function App() {
       },
     })
 
-    const currentLastIndex = currentLabels.length - 1
     const currentValues = [
-      ...STATIC_CURRENT_VALUES.R,
-      ...STATIC_CURRENT_VALUES.S,
-      ...STATIC_CURRENT_VALUES.T,
+      ...trendHistory.current.R,
+      ...trendHistory.current.S,
+      ...trendHistory.current.T,
     ]
     const currentMin = Math.min(...currentValues)
     const currentMax = Math.max(...currentValues)
@@ -462,15 +504,15 @@ function App() {
     chartInstances.current.current = new Chart(currentCtx, {
       type: 'line',
       data: {
-        labels: currentLabels,
+        labels: trendHistory.labels,
         datasets: [
           {
             label: 'Phase R',
-            data: STATIC_CURRENT_VALUES.R,
+            data: trendHistory.current.R,
             borderColor: '#d96262',
             borderWidth: 2.2,
             tension: 0.35,
-            pointRadius: endPointRadius(currentLastIndex),
+            pointRadius: 0,
             pointHoverRadius: 4,
             pointBackgroundColor: '#f3a1a1',
             pointBorderColor: '#fff4f4',
@@ -478,11 +520,11 @@ function App() {
           },
           {
             label: 'Phase S',
-            data: STATIC_CURRENT_VALUES.S,
+            data: trendHistory.current.S,
             borderColor: '#1f8f5f',
             borderWidth: 2.2,
             tension: 0.35,
-            pointRadius: endPointRadius(currentLastIndex),
+            pointRadius: 0,
             pointHoverRadius: 4,
             pointBackgroundColor: '#5acc9a',
             pointBorderColor: '#edf6f0',
@@ -490,11 +532,11 @@ function App() {
           },
           {
             label: 'Phase T',
-            data: STATIC_CURRENT_VALUES.T,
+            data: trendHistory.current.T,
             borderColor: '#f2a452',
             borderWidth: 2.2,
             tension: 0.35,
-            pointRadius: endPointRadius(currentLastIndex),
+            pointRadius: 0,
             pointHoverRadius: 4,
             pointBackgroundColor: '#f7c079',
             pointBorderColor: '#fff6ea',
@@ -524,8 +566,8 @@ function App() {
             ticks: { color: tickColor, maxTicksLimit: 6, font: { size: 10 } },
           },
           y: {
-            min: currentMin * 0.9,
-            max: currentMax * 1.1,
+            min: Number.isFinite(currentMin) ? currentMin * 0.9 : 0,
+            max: Number.isFinite(currentMax) ? currentMax * 1.1 : 1,
             grid: { color: gridColor, tickColor: gridColor },
             border: { color: axisColor },
             ticks: { color: tickColor, maxTicksLimit: 5, font: { size: 10 } },
@@ -538,7 +580,7 @@ function App() {
       chartInstances.current.pf?.destroy()
       chartInstances.current.current?.destroy()
     }
-  }, [pfLabels, currentLabels])
+  }, [trendHistory])
 
   const avgPf = useMemo(
     () => averagePf(phases),
@@ -559,29 +601,18 @@ function App() {
   }, [phases])
 
   const pfSummary = useMemo(() => {
-    const values = STATIC_PF_VALUES
-    const last = values[values.length - 1] ?? 0
-    const prev = values[values.length - 2] ?? last
-    const delta = prev ? ((last - prev) / prev) * 100 : 0
-    return { value: last, delta, isUp: delta >= 0 }
-  }, [])
+    return calculateSummary(trendHistory.pf)
+  }, [trendHistory.pf])
 
   const currentSummary = useMemo(() => {
-    const lastIndex = STATIC_CURRENT_VALUES.R.length - 1
-    const prevIndex = Math.max(0, lastIndex - 1)
-    const lastAvg =
-      (STATIC_CURRENT_VALUES.R[lastIndex] +
-        STATIC_CURRENT_VALUES.S[lastIndex] +
-        STATIC_CURRENT_VALUES.T[lastIndex]) /
-      3
-    const prevAvg =
-      (STATIC_CURRENT_VALUES.R[prevIndex] +
-        STATIC_CURRENT_VALUES.S[prevIndex] +
-        STATIC_CURRENT_VALUES.T[prevIndex]) /
-      3
-    const delta = prevAvg ? ((lastAvg - prevAvg) / prevAvg) * 100 : 0
-    return { value: lastAvg, delta, isUp: delta >= 0 }
-  }, [])
+    const length = trendHistory.labels.length
+    const averageSeries = Array.from({ length }, (_, index) => (
+      trendHistory.current.R[index] +
+      trendHistory.current.S[index] +
+      trendHistory.current.T[index]
+    ) / 3)
+    return calculateSummary(averageSeries)
+  }, [trendHistory])
 
   const handleNavClick = useCallback((index: number) => {
     const section = sectionRefs.current[index]
@@ -888,10 +919,20 @@ function App() {
             <div className="glass-card chart-card">
               <div className="chart-header">
                 <div>
-                  <h5 className="chart-stat">{pfSummary.value.toFixed(3)}</h5>
+                  <h5 className="chart-stat">
+                    {pfSummary.value !== null ? pfSummary.value.toFixed(3) : '-'}
+                  </h5>
                   <p className="chart-subtitle">Power factor average</p>
                 </div>
-                <span className={`chart-delta ${pfSummary.isUp ? 'up' : 'down'}`}>
+                <span
+                  className={`chart-delta ${
+                    pfSummary.value === null
+                      ? 'neutral'
+                      : pfSummary.isUp
+                        ? 'up'
+                        : 'down'
+                  }`}
+                >
                   <svg
                     className="delta-icon"
                     viewBox="0 0 24 24"
@@ -905,7 +946,9 @@ function App() {
                     <path d="M12 5v14" />
                     <path d="m6 11 6-6 6 6" />
                   </svg>
-                  {Math.abs(pfSummary.delta).toFixed(1)}%
+                  {pfSummary.value === null
+                    ? 'Waiting data'
+                    : `${Math.abs(pfSummary.delta).toFixed(1)}%`}
                 </span>
               </div>
               <div className="chart-surface">
@@ -915,39 +958,6 @@ function App() {
                   role="img"
                   aria-label="Power factor chart"
                 />
-              </div>
-              <div className="chart-footer">
-                <button type="button" className="chart-button">
-                  Last 7 days
-                  <svg
-                    className="footer-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-                <button type="button" className="chart-link">
-                  Progress report
-                  <svg
-                    className="footer-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m13 6 6 6-6 6" />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -981,13 +991,19 @@ function App() {
               <div className="chart-header">
                 <div>
                   <h5 className="chart-stat">
-                    {currentSummary.value.toFixed(2)} A
+                    {currentSummary.value !== null
+                      ? `${currentSummary.value.toFixed(2)} A`
+                      : '-'}
                   </h5>
                   <p className="chart-subtitle">Average phase current</p>
                 </div>
                 <span
                   className={`chart-delta ${
-                    currentSummary.isUp ? 'up' : 'down'
+                    currentSummary.value === null
+                      ? 'neutral'
+                      : currentSummary.isUp
+                        ? 'up'
+                        : 'down'
                   }`}
                 >
                   <svg
@@ -1003,7 +1019,9 @@ function App() {
                     <path d="M12 5v14" />
                     <path d="m6 11 6-6 6 6" />
                   </svg>
-                  {Math.abs(currentSummary.delta).toFixed(1)}%
+                  {currentSummary.value === null
+                    ? 'Waiting data'
+                    : `${Math.abs(currentSummary.delta).toFixed(1)}%`}
                 </span>
               </div>
               <div className="chart-surface">
@@ -1027,39 +1045,6 @@ function App() {
                   <span className="legend-dot t" />
                   <span>Phase T</span>
                 </div>
-              </div>
-              <div className="chart-footer">
-                <button type="button" className="chart-button">
-                  Last 24 hours
-                  <svg
-                    className="footer-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-                <button type="button" className="chart-link">
-                  Progress report
-                  <svg
-                    className="footer-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m13 6 6 6-6 6" />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
