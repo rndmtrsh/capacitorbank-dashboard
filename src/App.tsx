@@ -451,8 +451,8 @@ function App() {
             pointBorderWidth: 1,
           },
           {
-            label: 'Threshold 0.85',
-            data: trendHistory.labels.map(() => 0.85),
+            label: 'Threshold 0.8',
+            data: trendHistory.labels.map(() => 0.8),
             borderColor: 'rgba(242, 164, 82, 0.75)',
             borderWidth: 1.2,
             borderDash: [6, 6],
@@ -483,11 +483,11 @@ function App() {
             ticks: { color: tickColor, maxTicksLimit: 6, font: { size: 10 } },
           },
           y: {
-            min: 0.4,
+            min: 0.0,
             max: 1.0,
             grid: { color: gridColor, tickColor: gridColor },
             border: { color: axisColor },
-            ticks: { color: tickColor, maxTicksLimit: 5, font: { size: 10 } },
+            ticks: { color: tickColor, maxTicksLimit: 5, font: { size: 10 }, stepSize: 0.25 },
           },
         },
       },
@@ -674,9 +674,9 @@ function App() {
                 <span className="hero-icon">
                   <IconShield />
                 </span>
-                <span className="badge">Laboratorium Teknik Elektro</span>
+                <span className="badge">PROGRAM STUDI TEKNIK ELEKTRO</span>
               </div>
-              <h1 className="hero-title">Kompensator Daya Reaktif</h1>
+              <h1 className="hero-title">VAR Adaptive Compensator</h1>
               <p className="hero-subtitle">
                 Sistem Pengendalian Adaptif & Monitoring Real-time.
               </p>
@@ -696,7 +696,7 @@ function App() {
               </div>
               <div className="hero-footer">
                 <span className="pill">By Farhan Ramadhani Nugraha</span>
-                <span className="pill muted">Smart SCADA System</span>
+                <span className="pill muted">Smart 3-phase Dashboard System</span>
               </div>
             </div>
 
@@ -786,7 +786,7 @@ function App() {
             <div className="phase-grid">
               {phases.map((phase) => {
                 const pfTone =
-                  phase.pf >= 0.85
+                  phase.pf >= 0.8
                     ? 'good'
                     : phase.pf >= 0.7
                       ? 'warn'
@@ -884,7 +884,7 @@ function App() {
                   Real time compensation status with trend visibility.
                 </p>
               </div>
-              <span className="badge">Threshold 0.85</span>
+              <span className="badge">Threshold 0.8</span>
             </div>
 
             <div className="cap-grid">
