@@ -595,7 +595,7 @@ function App() {
     const imbalance = Math.max(...currents) - Math.min(...currents)
     return imbalance < 0.35
       ? { label: 'Balanced', tone: 'good' }
-      : imbalance < 0.8
+      : imbalance < 1.5
         ? { label: 'Moderate unbalance', tone: 'warn' }
         : { label: 'High unbalance', tone: 'bad' }
   }, [phases])
