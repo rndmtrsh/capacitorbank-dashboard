@@ -683,15 +683,15 @@ function App() {
               <div className="hero-metrics">
                 <div className="metric-card">
                   <p className="metric-label">Target PF</p>
-                  <p className="metric-value">0.92</p>
+                  <p className="metric-value">0.8</p>
                 </div>
                 <div className="metric-card">
                   <p className="metric-label">Capacity</p>
-                  <p className="metric-value">19.2 MVAR</p>
+                  <p className="metric-value">10.8 MVAR</p>
                 </div>
                 <div className="metric-card">
                   <p className="metric-label">Efficiency</p>
-                  <p className="metric-value">98.2%</p>
+                  <p className="metric-value">80.0%</p>
                 </div>
               </div>
               <div className="hero-footer">
